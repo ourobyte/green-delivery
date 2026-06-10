@@ -1,0 +1,411 @@
+```html
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Delivery - Greencentermart</title>
+
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+
+    <meta name="theme-color" content="#ffffff">
+</head>
+<body>
+
+    <header>
+        <h1>Update Data Delivery</h1>
+
+        <div class="header-action">
+            <button type="button" onclick="location.href='index.html'">
+                ← Kembali
+            </button>
+        </div>
+    </header>
+
+    <main>
+
+        <div id="loadingStatus">
+            Memuat data...
+        </div>
+
+        <form
+            id="updateForm"
+            enctype="multipart/form-data"
+            style="display:none;"
+        >
+
+            <input
+                type="hidden"
+                id="deliveryId"
+            >
+
+            <section>
+
+                <label for="nama">
+                    Nama Penerima
+                </label>
+
+                <input
+                    type="text"
+                    id="nama"
+                    name="nama"
+                    required
+                    autocomplete="off"
+                >
+
+            </section>
+
+            <section>
+
+                <label for="alamat">
+                    Alamat Lengkap Rumah
+                </label>
+
+                <textarea
+                    id="alamat"
+                    name="alamat"
+                    rows="5"
+                    required
+                ></textarea>
+
+            </section>
+
+            <section>
+
+                <label for="sharelock">
+                    Link Sharelock / Google Maps
+                </label>
+
+                <input
+                    type="url"
+                    id="sharelock"
+                    name="sharelock"
+                    required
+                >
+
+            </section>
+
+            <section>
+
+                <label for="keterangan">
+                    Keterangan Tempat
+                </label>
+
+                <textarea
+                    id="keterangan"
+                    name="keterangan"
+                    rows="4"
+                ></textarea>
+
+            </section>
+
+            <section>
+
+                <label>
+                    Foto Rumah Saat Ini
+                </label>
+
+                <div class="preview-wrapper">
+
+                    <img
+                        id="existingFoto"
+                        alt="Foto Rumah"
+                        style="max-width:100%;display:none;"
+                    >
+
+                </div>
+
+            </section>
+
+            <section>
+
+                <label for="foto">
+                    Ganti Foto Rumah (Opsional)
+                </label>
+
+                <input
+                    type="file"
+                    id="foto"
+                    name="foto"
+                    accept="image/*"
+                >
+
+                <div class="preview-wrapper">
+
+                    <img
+                        id="newPreview"
+                        alt="Preview Foto Baru"
+                        style="display:none;max-width:100%;margin-top:10px;"
+                    >
+
+                </div>
+
+            </section>
+
+            <section>
+
+                <label>
+                    Preview Lokasi
+                </label>
+
+                <iframe
+                    id="mapsPreview"
+                    style="width:100%;height:300px;border:1px solid #ccc;"
+                    loading="lazy"
+                    allowfullscreen
+                    referrerpolicy="no-referrer-when-downgrade"
+                >
+                </iframe>
+
+            </section>
+
+            <section class="form-action">
+
+                <button
+                    type="submit"
+                    id="submitBtn"
+                >
+                    Simpan Perubahan
+                </button>
+
+            </section>
+
+        </form>
+
+    </main>
+
+    <script src="app.js"></script>
+
+    <script>
+
+        const params = new URLSearchParams(location.search);
+
+        const deliveryId = params.get("id");
+
+        const form = document.getElementById("updateForm");
+
+        const loadingStatus =
+            document.getElementById("loadingStatus");
+
+        const mapsPreview =
+            document.getElementById("mapsPreview");
+
+        const existingFoto =
+            document.getElementById("existingFoto");
+
+        const newPreview =
+            document.getElementById("newPreview");
+
+        const fotoInput =
+            document.getElementById("foto");
+
+        const submitBtn =
+            document.getElementById("submitBtn");
+
+        /*
+         * Preview foto baru
+         */
+        fotoInput.addEventListener("change", () => {
+
+            const file = fotoInput.files[0];
+
+            if (!file) {
+
+                newPreview.style.display = "none";
+                newPreview.src = "";
+
+                return;
+
+            }
+
+            const reader = new FileReader();
+
+            reader.onload = e => {
+
+                newPreview.src = e.target.result;
+                newPreview.style.display = "block";
+
+            };
+
+            reader.readAsDataURL(file);
+
+        });
+
+        /*
+         * Preview maps
+         */
+        document
+            .getElementById("sharelock")
+            .addEventListener("input", e => {
+
+                const value = e.target.value.trim();
+
+                if (!value) {
+
+                    mapsPreview.removeAttribute("src");
+
+                    return;
+
+                }
+
+                mapsPreview.src =
+                    "https://www.google.com/maps?q="
+                    + encodeURIComponent(value)
+                    + "&output=embed";
+
+            });
+
+        /*
+         * Ambil detail data
+         */
+        async function loadData() {
+
+            if (!deliveryId) {
+
+                loadingStatus.textContent =
+                    "ID delivery tidak ditemukan.";
+
+                return;
+
+            }
+
+            try {
+
+                const data =
+                    await getDeliveryById(deliveryId);
+
+                document.getElementById("deliveryId").value =
+                    data._id;
+
+                document.getElementById("nama").value =
+                    data.nama || "";
+
+                document.getElementById("alamat").value =
+                    data.alamat || "";
+
+                document.getElementById("sharelock").value =
+                    data.sharelock || "";
+
+                document.getElementById("keterangan").value =
+                    data.keterangan || "";
+
+                if (data.sharelock) {
+
+                    mapsPreview.src =
+                        "https://www.google.com/maps?q="
+                        + encodeURIComponent(data.sharelock)
+                        + "&output=embed";
+
+                }
+
+                if (data.foto) {
+
+                    existingFoto.src = data.foto;
+                    existingFoto.style.display = "block";
+
+                }
+
+                loadingStatus.style.display = "none";
+
+                form.style.display = "block";
+
+            }
+            catch (err) {
+
+                console.error(err);
+
+                loadingStatus.textContent =
+                    err.message || "Gagal memuat data.";
+
+            }
+
+        }
+
+        /*
+         * Submit update
+         */
+        form.addEventListener("submit", async e => {
+
+            e.preventDefault();
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Menyimpan...";
+
+            try {
+
+                const formData = new FormData();
+
+                formData.append(
+                    "nama",
+                    document.getElementById("nama").value.trim()
+                );
+
+                formData.append(
+                    "alamat",
+                    document.getElementById("alamat").value.trim()
+                );
+
+                formData.append(
+                    "sharelock",
+                    document.getElementById("sharelock").value.trim()
+                );
+
+                formData.append(
+                    "keterangan",
+                    document.getElementById("keterangan").value.trim()
+                );
+
+                if (fotoInput.files.length > 0) {
+
+                    formData.append(
+                        "foto",
+                        fotoInput.files[0]
+                    );
+
+                }
+
+                const result =
+                    await updateDelivery(
+                        deliveryId,
+                        formData
+                    );
+
+                alert(
+                    result.message ||
+                    "Data berhasil diperbarui."
+                );
+
+                location.href = "index.html";
+
+            }
+            catch (err) {
+
+                console.error(err);
+
+                alert(
+                    err.message ||
+                    "Gagal memperbarui data."
+                );
+
+            }
+            finally {
+
+                submitBtn.disabled = false;
+                submitBtn.textContent =
+                    "Simpan Perubahan";
+
+            }
+
+        });
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            loadData
+        );
+
+    </script>
+
+</body>
+</html>
+```
