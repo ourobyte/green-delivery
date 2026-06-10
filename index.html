@@ -69,7 +69,7 @@
             <input type="text" id="alamat" required>
 
             <label>Link Sharelock / Destinasi:</label>
-            <input type="text" id="sharelock" placeholder="Contoh: Jl. Sudirman No.1" oninput="updateMap()">
+            <input type="text" id="sharelock" placeholder="Contoh: Jl. Sudirman No.1" oninput="Map()">
 
             <label>Teks Koordinat (Opsional):</label>
             <input type="text" id="koordinat">
@@ -100,12 +100,17 @@
             }
         }
 
-        function updateMap() {
+        function Map() {
             const dest = document.getElementById('sharelock').value;
             const iframe = document.getElementById('mapPreview');
+    
             if (dest.length > 3) {
-                // Generate rute dari Greencentermart ke Tujuan
-                iframe.src = `https://maps.google.com/maps?saddr=Greencentermart&daddr=${encodeURIComponent(dest)}&output=embed`;
+                // Lokasi asal dikunci di Greencentermart
+                const origin = "Greencentermart"; 
+                const destination = encodeURIComponent(dest);
+                
+                // Menggunakan URL Embed resmi Google Maps untuk rute (Directions)
+                iframe.src = `https://www.google.com/maps/embed/v1/directions?key=&origin=${origin}&destination=${destination}`;
                 iframe.style.display = 'block';
             } else {
                 iframe.style.display = 'none';
