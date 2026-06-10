@@ -10,311 +10,232 @@
 
     <meta name="theme-color" content="#ffffff">
 </head>
+
 <body>
 
-    <header>
-        <h1>Tambah Data Delivery</h1>
+<header>
+    <h1>Tambah Data Delivery</h1>
 
-        <div class="header-action">
-            <button type="button" onclick="location.href='index.html'">
-                ← Kembali
-            </button>
-        </div>
-    </header>
+    <div class="header-action">
+        <button type="button" onclick="location.href='index.html'">
+            ← Kembali
+        </button>
+    </div>
+</header>
 
-    <main>
+<main>
 
-        <form id="deliveryForm" enctype="multipart/form-data">
+<form id="deliveryForm" enctype="multipart/form-data">
 
-            <section>
+    <!-- NAMA -->
+    <section>
+        <label for="nama">Nama Penerima</label>
+        <input type="text" id="nama" required autocomplete="off">
+    </section>
 
-                <label for="nama">
-                    Nama Penerima
-                </label>
+    <!-- ALAMAT -->
+    <section>
+        <label for="alamat">Alamat Lengkap Rumah</label>
+        <textarea id="alamat" rows="5" required></textarea>
+    </section>
 
-                <input
-                    type="text"
-                    id="nama"
-                    name="nama"
-                    required
-                    autocomplete="off"
-                >
+    <!-- KOORDINAT (FIX REPLACE SHARELOCK) -->
+    <section>
 
-            </section>
+        <label>Koordinat Lokasi</label>
 
-            <section>
+        <input
+            type="number"
+            id="lat"
+            placeholder="Latitude (contoh: -6.3645443)"
+            step="any"
+            required
+        >
 
-                <label for="alamat">
-                    Alamat Lengkap Rumah
-                </label>
+        <input
+            type="number"
+            id="lng"
+            placeholder="Longitude (contoh: 106.8663167)"
+            step="any"
+            required
+        >
 
-                <textarea
-                    id="alamat"
-                    name="alamat"
-                    rows="5"
-                    required
-                ></textarea>
+        <small>
+            Masukkan koordinat dari Google Maps (klik kanan → copy latitude/longitude)
+        </small>
 
-            </section>
+    </section>
 
-            <section>
+    <!-- KETERANGAN -->
+    <section>
+        <label for="keterangan">Keterangan Tempat</label>
+        <textarea id="keterangan" rows="4"></textarea>
+    </section>
 
-                <label for="sharelock">
-                    Link Sharelock / Google Maps
-                </label>
+    <!-- FOTO -->
+    <section>
+        <label for="foto">Foto Rumah</label>
 
-                <input
-                    type="url"
-                    id="sharelock"
-                    name="sharelock"
-                    placeholder="https://maps.google.com/..."
-                    required
-                >
+        <input type="file" id="foto" accept="image/*">
 
-                <small>
-                    Tempel link share lokasi Google Maps.
-                </small>
+        <img
+            id="previewFoto"
+            style="display:none;max-width:100%;margin-top:10px;"
+        >
+    </section>
 
-            </section>
+    <!-- MAP PREVIEW -->
+    <section>
 
-            <section>
+        <label>Preview Lokasi</label>
 
-                <label for="keterangan">
-                    Keterangan Tempat
-                </label>
+        <iframe
+            id="mapsPreview"
+            style="width:100%;height:300px;border:1px solid #ccc;"
+            loading="lazy"
+            allowfullscreen
+        ></iframe>
 
-                <textarea
-                    id="keterangan"
-                    name="keterangan"
-                    rows="4"
-                    placeholder="Contoh: pagar hitam, dekat warung..."
-                ></textarea>
+    </section>
 
-            </section>
+    <!-- ACTION -->
+    <section class="form-action">
 
-            <section>
+        <button type="submit" id="submitBtn">
+            Simpan Data
+        </button>
 
-                <label for="foto">
-                    Foto Rumah
-                </label>
+        <button type="reset">
+            Reset
+        </button>
 
-                <input
-                    type="file"
-                    id="foto"
-                    name="foto"
-                    accept="image/*"
-                >
+    </section>
 
-                <div class="preview-wrapper">
+</form>
 
-                    <img
-                        id="previewFoto"
-                        alt="Preview Foto"
-                        style="display:none;max-width:100%;margin-top:10px;"
-                    >
+<div id="status" style="margin-top:20px;"></div>
 
-                </div>
+</main>
 
-            </section>
+<script src="app.js"></script>
 
-            <section>
+<script>
 
-                <label>
-                    Preview Lokasi
-                </label>
+const form = document.getElementById("deliveryForm");
 
-                <iframe
-                    id="mapsPreview"
-                    loading="lazy"
-                    allowfullscreen
-                    referrerpolicy="no-referrer-when-downgrade"
-                    style="width:100%;height:300px;border:1px solid #ccc;"
-                >
-                </iframe>
+const latInput = document.getElementById("lat");
+const lngInput = document.getElementById("lng");
 
-            </section>
+const mapsPreview = document.getElementById("mapsPreview");
 
-            <section class="form-action">
+const fotoInput = document.getElementById("foto");
+const previewFoto = document.getElementById("previewFoto");
 
-                <button
-                    type="submit"
-                    id="submitBtn"
-                >
-                    Simpan Data
-                </button>
+const statusEl = document.getElementById("status");
+const submitBtn = document.getElementById("submitBtn");
 
-                <button
-                    type="reset"
-                    id="resetBtn"
-                >
-                    Reset
-                </button>
+/*
+|--------------------------------------------------------------------------
+| FOTO PREVIEW
+|--------------------------------------------------------------------------
+*/
+fotoInput.addEventListener("change", () => {
 
-            </section>
+    const file = fotoInput.files[0];
 
-        </form>
+    if (!file) {
+        previewFoto.style.display = "none";
+        return;
+    }
 
-        <div
-            id="status"
-            style="margin-top:20px;"
-        ></div>
+    const reader = new FileReader();
 
-    </main>
+    reader.onload = e => {
+        previewFoto.src = e.target.result;
+        previewFoto.style.display = "block";
+    };
 
-    <script src="app.js"></script>
+    reader.readAsDataURL(file);
+});
 
-    <script>
+/*
+|--------------------------------------------------------------------------
+| MAP PREVIEW (KOORDINAT)
+|--------------------------------------------------------------------------
+*/
+function updateMap() {
 
-        const form = document.getElementById("deliveryForm");
-        const sharelockInput = document.getElementById("sharelock");
-        const mapsPreview = document.getElementById("mapsPreview");
+    const lat = latInput.value;
+    const lng = lngInput.value;
 
-        const fotoInput = document.getElementById("foto");
-        const previewFoto = document.getElementById("previewFoto");
+    if (!lat || !lng) {
+        mapsPreview.removeAttribute("src");
+        return;
+    }
 
-        const statusEl = document.getElementById("status");
-        const submitBtn = document.getElementById("submitBtn");
+    mapsPreview.src =
+        `https://www.google.com/maps?q=${lat},${lng}&output=embed`;
+}
 
-        /*
-         * Preview foto rumah
-         */
-        fotoInput.addEventListener("change", () => {
+latInput.addEventListener("input", updateMap);
+lngInput.addEventListener("input", updateMap);
 
-            const file = fotoInput.files[0];
+/*
+|--------------------------------------------------------------------------
+| SUBMIT
+|--------------------------------------------------------------------------
+*/
+form.addEventListener("submit", async (e) => {
 
-            if (!file) {
-                previewFoto.style.display = "none";
-                previewFoto.src = "";
-                return;
-            }
+    e.preventDefault();
 
-            const reader = new FileReader();
+    statusEl.textContent = "";
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Menyimpan...";
 
-            reader.onload = e => {
+    try {
 
-                previewFoto.src = e.target.result;
-                previewFoto.style.display = "block";
+        const formData = new FormData();
 
-            };
+        formData.append("nama", document.getElementById("nama").value.trim());
+        formData.append("alamat", document.getElementById("alamat").value.trim());
 
-            reader.readAsDataURL(file);
+        formData.append("lat", latInput.value);
+        formData.append("lng", lngInput.value);
 
-        });
+        formData.append("keterangan", document.getElementById("keterangan").value.trim());
 
-        /*
-         * Preview maps
-         */
-        sharelockInput.addEventListener("input", () => {
+        if (fotoInput.files.length > 0) {
+            formData.append("foto", fotoInput.files[0]);
+        }
 
-            const value = sharelockInput.value.trim();
+        const result = await addDelivery(formData);
 
-            if (!value) {
-                mapsPreview.removeAttribute("src");
-                return;
-            }
+        statusEl.textContent = result.message || "Data berhasil disimpan.";
 
-            try {
+        form.reset();
+        previewFoto.style.display = "none";
+        mapsPreview.removeAttribute("src");
 
-                const embedUrl =
-                    "https://www.google.com/maps?q="
-                    + encodeURIComponent(value)
-                    + "&output=embed";
+        setTimeout(() => {
+            location.href = "index.html";
+        }, 1000);
 
-                mapsPreview.src = embedUrl;
+    } catch (err) {
 
-            }
-            catch (err) {
+        console.error(err);
+        statusEl.textContent = err.message || "Gagal menyimpan data.";
 
-                console.error(err);
+    } finally {
 
-            }
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Simpan Data";
 
-        });
+    }
 
-        /*
-         * Simpan data
-         */
-        form.addEventListener("submit", async (e) => {
+});
 
-            e.preventDefault();
-
-            statusEl.textContent = "";
-            submitBtn.disabled = true;
-            submitBtn.textContent = "Menyimpan...";
-
-            try {
-
-                const formData = new FormData();
-
-                formData.append(
-                    "nama",
-                    document.getElementById("nama").value.trim()
-                );
-
-                formData.append(
-                    "alamat",
-                    document.getElementById("alamat").value.trim()
-                );
-
-                formData.append(
-                    "sharelock",
-                    sharelockInput.value.trim()
-                );
-
-                formData.append(
-                    "keterangan",
-                    document.getElementById("keterangan").value.trim()
-                );
-
-                if (fotoInput.files.length > 0) {
-
-                    formData.append(
-                        "foto",
-                        fotoInput.files[0]
-                    );
-
-                }
-
-                /*
-                 * Fungsi berasal dari app.js
-                 */
-                const result = await addDelivery(formData);
-
-                statusEl.textContent =
-                    result.message || "Data berhasil disimpan.";
-
-                form.reset();
-
-                previewFoto.style.display = "none";
-                previewFoto.src = "";
-
-                mapsPreview.removeAttribute("src");
-
-                setTimeout(() => {
-
-                    location.href = "index.html";
-
-                }, 1000);
-
-            }
-            catch (err) {
-
-                console.error(err);
-
-                statusEl.textContent =
-                    err.message || "Gagal menyimpan data.";
-
-            }
-            finally {
-
-                submitBtn.disabled = false;
-                submitBtn.textContent = "Simpan Data";
-
-            }
-
-        });
-
-    </script>
+</script>
 
 </body>
 </html>
