@@ -1,4 +1,4 @@
-const CACHE_NAME = "delivery-gm-v1";
+const CACHE_NAME = "delivery-gm-v2";
 
 const FILES_TO_CACHE = [
     "index.html",
@@ -11,24 +11,22 @@ const FILES_TO_CACHE = [
 
 /*
 |--------------------------------------------------------------------------
-| Install Service Worker
+| INSTALL
 |--------------------------------------------------------------------------
 */
 self.addEventListener("install", event => {
 
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => {
-                return cache.addAll(FILES_TO_CACHE);
-            })
-            .then(() => self.skipWaiting())
+        caches.open(CACHE_NAME).then(cache => {
+            return cache.addAll(FILES_TO_CACHE);
+        }).then(() => self.skipWaiting())
     );
 
 });
 
 /*
 |--------------------------------------------------------------------------
-| Activate
+| ACTIVATE
 |--------------------------------------------------------------------------
 */
 self.addEventListener("activate", event => {
@@ -37,60 +35,80 @@ self.addEventListener("activate", event => {
         caches.keys().then(keys => {
             return Promise.all(
                 keys
-                    .filter(key => key !== CACHE_NAME)
-                    .map(key => caches.delete(key))
+                    .filter(k => k !== CACHE_NAME)
+                    .map(k => caches.delete(k))
             );
         })
     );
 
     self.clients.claim();
-
 });
 
 /*
 |--------------------------------------------------------------------------
-| Fetch Strategy (Cache First)
+| FETCH (SAFE NETWORK-FIRST FOR API)
 |--------------------------------------------------------------------------
 */
 self.addEventListener("fetch", event => {
 
+    const url = event.request.url;
+
+    // ❗ Jangan cache API (ini penting)
+    if (url.includes("/api/")) {
+
+        event.respondWith(
+            fetch(event.request)
+                .then(res => res)
+                .catch(() => {
+                    return new Response(
+                        JSON.stringify({ error: "offline" }),
+                        {
+                            status: 503,
+                            headers: { "Content-Type": "application/json" }
+                        }
+                    );
+                })
+        );
+
+        return;
+    }
+
+    // CACHE FIRST untuk static file
     event.respondWith(
         caches.match(event.request)
-            .then(response => {
+            .then(cached => {
 
-                if (response) {
-                    return response;
-                }
+                if (cached) return cached;
 
                 return fetch(event.request)
-                    .then(networkResponse => {
+                    .then(networkRes => {
 
-                        // cache file baru (optional)
-                        if (
-                            event.request.url.startsWith("http")
-                        ) {
-
-                            const cloned = networkResponse.clone();
-
-                            caches.open(CACHE_NAME)
-                                .then(cache => {
-                                    cache.put(
-                                        event.request,
-                                        cloned
-                                    );
-                                });
-
+                        // pastikan valid response
+                        if (!networkRes || networkRes.status !== 200) {
+                            return networkRes;
                         }
 
-                        return networkResponse;
+                        const clone = networkRes.clone();
+
+                        caches.open(CACHE_NAME)
+                            .then(cache => {
+                                cache.put(event.request, clone);
+                            });
+
+                        return networkRes;
 
                     })
                     .catch(() => {
 
-                        // fallback sederhana
+                        // fallback aman
                         if (event.request.destination === "document") {
                             return caches.match("index.html");
                         }
+
+                        return new Response("Offline", {
+                            status: 200,
+                            headers: { "Content-Type": "text/plain" }
+                        });
 
                     });
 
