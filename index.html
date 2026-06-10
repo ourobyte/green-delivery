@@ -10,136 +10,143 @@
 
     <meta name="theme-color" content="#ffffff">
 </head>
+
 <body>
 
-    <header>
-        <h1>Delivery Greencentermart</h1>
-    </header>
+<header>
+    <h1>Delivery Greencentermart</h1>
+</header>
 
-    <main>
+<main>
 
-        <section>
-            <div>
-                <input
-                    type="text"
-                    id="searchInput"
-                    placeholder="Cari nama, alamat, atau keterangan..."
-                    autocomplete="off"
-                >
+    <!-- CONTROL PANEL -->
+    <section>
+        <div class="toolbar">
 
-                <button id="searchBtn">
-                    Cari
-                </button>
+            <input
+                type="text"
+                id="searchInput"
+                placeholder="Cari nama, alamat, atau keterangan..."
+                autocomplete="off"
+            >
 
-                <button id="refreshBtn">
-                    Refresh
-                </button>
+            <button id="searchBtn">Cari</button>
+            <button id="refreshBtn">Refresh</button>
 
-                <button
-                    type="button"
-                    onclick="location.href='add.html'">
-                    Tambah Data
-                </button>
-            </div>
-        </section>
+            <button type="button" onclick="location.href='add.html'">
+                Tambah Data
+            </button>
 
-        <hr>
+        </div>
+    </section>
 
-        <section>
-            <h2>Hasil Pencarian</h2>
+    <hr>
 
-            <div id="status">
-                Memuat data...
-            </div>
+    <!-- STATUS -->
+    <section>
+        <h2>Hasil Pencarian</h2>
 
-            <div id="resultList"></div>
-        </section>
+        <div id="status">
+            Memuat data...
+        </div>
 
-    </main>
+        <div id="resultList"></div>
+    </section>
 
-    <template id="deliveryTemplate">
+</main>
 
-        <article class="delivery-card">
+<!-- TEMPLATE CARD -->
+<template id="deliveryTemplate">
 
-            <h3 class="nama"></h3>
+    <article class="delivery-card">
 
-            <p>
-                <strong>Alamat:</strong><br>
-                <span class="alamat"></span>
-            </p>
+        <h3 class="nama"></h3>
 
-            <p>
-                <strong>Keterangan:</strong><br>
-                <span class="keterangan"></span>
-            </p>
+        <p>
+            <strong>Alamat:</strong><br>
+            <span class="alamat"></span>
+        </p>
 
-            <div class="foto-container">
-                <img
-                    class="foto"
-                    alt="Foto Rumah"
-                    loading="lazy"
-                >
-            </div>
+        <p>
+            <strong>Keterangan:</strong><br>
+            <span class="keterangan"></span>
+        </p>
 
-            <div class="maps-container">
-                <iframe
-                    class="maps"
-                    loading="lazy"
-                    referrerpolicy="no-referrer-when-downgrade"
-                    allowfullscreen>
-                </iframe>
-            </div>
+        <!-- FOTO -->
+        <div class="foto-container">
+            <img
+                class="foto"
+                alt="Foto Rumah"
+                loading="lazy"
+            >
+        </div>
 
-            <div class="actions">
+        <!-- KOORDINAT (OPTIONAL DISPLAY) -->
+        <p class="coord-box">
+            <small class="koordinat"></small>
+        </p>
 
-                <button class="lihat-rute">
-                    Buka Maps
-                </button>
+        <!-- MAPS (BERBASIS LAT LNG) -->
+        <div class="maps-container">
+            <iframe
+                class="maps"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                allowfullscreen>
+            </iframe>
+        </div>
 
-                <button class="edit-data">
-                    Edit
-                </button>
+        <!-- ACTIONS -->
+        <div class="actions">
 
-            </div>
+            <button class="lihat-rute">
+                Buka Maps
+            </button>
 
-        </article>
+            <button class="edit-data">
+                Edit
+            </button>
 
-    </template>
+        </div>
 
-    <script src="app.js"></script>
+    </article>
 
-    <script>
+</template>
 
-        document.addEventListener("DOMContentLoaded", async () => {
+<!-- APP SCRIPT -->
+<script src="app.js"></script>
 
-            if ("serviceWorker" in navigator) {
-                navigator.serviceWorker.register("sw.js")
-                    .catch(console.error);
-            }
+<script>
 
-            await loadAllData();
+document.addEventListener("DOMContentLoaded", async () => {
 
-        });
+    // service worker
+    if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("sw.js")
+            .catch(console.error);
+    }
 
-        document
-            .getElementById("searchBtn")
-            .addEventListener("click", searchData);
+    // load data awal
+    await loadAllData();
+});
 
-        document
-            .getElementById("refreshBtn")
-            .addEventListener("click", loadAllData);
+// tombol search
+document.getElementById("searchBtn")
+    .addEventListener("click", searchData);
 
-        document
-            .getElementById("searchInput")
-            .addEventListener("keydown", async (e) => {
+// tombol refresh
+document.getElementById("refreshBtn")
+    .addEventListener("click", loadAllData);
 
-                if (e.key === "Enter") {
-                    await searchData();
-                }
+// enter search
+document.getElementById("searchInput")
+    .addEventListener("keydown", async (e) => {
+        if (e.key === "Enter") {
+            await searchData();
+        }
+    });
 
-            });
-
-    </script>
+</script>
 
 </body>
 </html>
