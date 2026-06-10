@@ -1,0 +1,322 @@
+```html
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tambah Delivery - Greencentermart</title>
+
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+
+    <meta name="theme-color" content="#ffffff">
+</head>
+<body>
+
+    <header>
+        <h1>Tambah Data Delivery</h1>
+
+        <div class="header-action">
+            <button type="button" onclick="location.href='index.html'">
+                ← Kembali
+            </button>
+        </div>
+    </header>
+
+    <main>
+
+        <form id="deliveryForm" enctype="multipart/form-data">
+
+            <section>
+
+                <label for="nama">
+                    Nama Penerima
+                </label>
+
+                <input
+                    type="text"
+                    id="nama"
+                    name="nama"
+                    required
+                    autocomplete="off"
+                >
+
+            </section>
+
+            <section>
+
+                <label for="alamat">
+                    Alamat Lengkap Rumah
+                </label>
+
+                <textarea
+                    id="alamat"
+                    name="alamat"
+                    rows="5"
+                    required
+                ></textarea>
+
+            </section>
+
+            <section>
+
+                <label for="sharelock">
+                    Link Sharelock / Google Maps
+                </label>
+
+                <input
+                    type="url"
+                    id="sharelock"
+                    name="sharelock"
+                    placeholder="https://maps.google.com/..."
+                    required
+                >
+
+                <small>
+                    Tempel link share lokasi Google Maps.
+                </small>
+
+            </section>
+
+            <section>
+
+                <label for="keterangan">
+                    Keterangan Tempat
+                </label>
+
+                <textarea
+                    id="keterangan"
+                    name="keterangan"
+                    rows="4"
+                    placeholder="Contoh: pagar hitam, dekat warung..."
+                ></textarea>
+
+            </section>
+
+            <section>
+
+                <label for="foto">
+                    Foto Rumah
+                </label>
+
+                <input
+                    type="file"
+                    id="foto"
+                    name="foto"
+                    accept="image/*"
+                >
+
+                <div class="preview-wrapper">
+
+                    <img
+                        id="previewFoto"
+                        alt="Preview Foto"
+                        style="display:none;max-width:100%;margin-top:10px;"
+                    >
+
+                </div>
+
+            </section>
+
+            <section>
+
+                <label>
+                    Preview Lokasi
+                </label>
+
+                <iframe
+                    id="mapsPreview"
+                    loading="lazy"
+                    allowfullscreen
+                    referrerpolicy="no-referrer-when-downgrade"
+                    style="width:100%;height:300px;border:1px solid #ccc;"
+                >
+                </iframe>
+
+            </section>
+
+            <section class="form-action">
+
+                <button
+                    type="submit"
+                    id="submitBtn"
+                >
+                    Simpan Data
+                </button>
+
+                <button
+                    type="reset"
+                    id="resetBtn"
+                >
+                    Reset
+                </button>
+
+            </section>
+
+        </form>
+
+        <div
+            id="status"
+            style="margin-top:20px;"
+        ></div>
+
+    </main>
+
+    <script src="app.js"></script>
+
+    <script>
+
+        const form = document.getElementById("deliveryForm");
+        const sharelockInput = document.getElementById("sharelock");
+        const mapsPreview = document.getElementById("mapsPreview");
+
+        const fotoInput = document.getElementById("foto");
+        const previewFoto = document.getElementById("previewFoto");
+
+        const statusEl = document.getElementById("status");
+        const submitBtn = document.getElementById("submitBtn");
+
+        /*
+         * Preview foto rumah
+         */
+        fotoInput.addEventListener("change", () => {
+
+            const file = fotoInput.files[0];
+
+            if (!file) {
+                previewFoto.style.display = "none";
+                previewFoto.src = "";
+                return;
+            }
+
+            const reader = new FileReader();
+
+            reader.onload = e => {
+
+                previewFoto.src = e.target.result;
+                previewFoto.style.display = "block";
+
+            };
+
+            reader.readAsDataURL(file);
+
+        });
+
+        /*
+         * Preview maps
+         */
+        sharelockInput.addEventListener("input", () => {
+
+            const value = sharelockInput.value.trim();
+
+            if (!value) {
+                mapsPreview.removeAttribute("src");
+                return;
+            }
+
+            try {
+
+                const embedUrl =
+                    "https://www.google.com/maps?q="
+                    + encodeURIComponent(value)
+                    + "&output=embed";
+
+                mapsPreview.src = embedUrl;
+
+            }
+            catch (err) {
+
+                console.error(err);
+
+            }
+
+        });
+
+        /*
+         * Simpan data
+         */
+        form.addEventListener("submit", async (e) => {
+
+            e.preventDefault();
+
+            statusEl.textContent = "";
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Menyimpan...";
+
+            try {
+
+                const formData = new FormData();
+
+                formData.append(
+                    "nama",
+                    document.getElementById("nama").value.trim()
+                );
+
+                formData.append(
+                    "alamat",
+                    document.getElementById("alamat").value.trim()
+                );
+
+                formData.append(
+                    "sharelock",
+                    sharelockInput.value.trim()
+                );
+
+                formData.append(
+                    "keterangan",
+                    document.getElementById("keterangan").value.trim()
+                );
+
+                if (fotoInput.files.length > 0) {
+
+                    formData.append(
+                        "foto",
+                        fotoInput.files[0]
+                    );
+
+                }
+
+                /*
+                 * Fungsi berasal dari app.js
+                 */
+                const result = await addDelivery(formData);
+
+                statusEl.textContent =
+                    result.message || "Data berhasil disimpan.";
+
+                form.reset();
+
+                previewFoto.style.display = "none";
+                previewFoto.src = "";
+
+                mapsPreview.removeAttribute("src");
+
+                setTimeout(() => {
+
+                    location.href = "index.html";
+
+                }, 1000);
+
+            }
+            catch (err) {
+
+                console.error(err);
+
+                statusEl.textContent =
+                    err.message || "Gagal menyimpan data.";
+
+            }
+            finally {
+
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Simpan Data";
+
+            }
+
+        });
+
+    </script>
+
+</body>
+</html>
+```
