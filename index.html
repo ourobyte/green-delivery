@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Route Manager</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        :root {
+            --bg-color: #121212;
+            --surface: #1e1e1e;
+            --primary: #317873;
+            --text: #e0e0e0;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            background-color: var(--surface);
+            padding: 25px;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        h2 { margin-top: 0; color: var(--primary); text-transform: uppercase; letter-spacing: 1px;}
+        label { display: block; margin-top: 15px; font-size: 0.9em; color: #aaa; }
+        input[type="text"], input[type="file"], input[type="password"] {
+            width: 100%; padding: 10px; margin-top: 5px;
+            background-color: #2c2c2c; border: 1px solid #444; color: #fff;
+            border-radius: 4px; box-sizing: border-box;
+        }
+        input:focus { outline: none; border-color: var(--primary); }
+        button {
+            width: 100%; padding: 12px; margin-top: 20px;
+            background-color: var(--primary); color: white;
+            border: none; border-radius: 4px; font-weight: bold;
+            cursor: pointer; transition: 0.3s;
+        }
+        button:hover { background-color: #245b57; }
+        #mapPreview { width: 100%; height: 250px; margin-top: 15px; border: none; display: none; border-radius: 4px;}
+        #authScreen { display: block; }
+        #appScreen { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="authScreen">
+            <h2>Akses Admin</h2>
+            <label>Masukkan PIN Pemilik:</label>
+            <input type="password" id="pinInput">
+            <button onclick="checkPin()">Masuk</button>
+        </div>
+
+        <div id="appScreen">
+            <h2>Tambah Rute Delivery</h2>
+            
+            <label>Nama Penerima:</label>
+            <input type="text" id="nama" required>
+
+            <label>Alamat Lengkap:</label>
+            <input type="text" id="alamat" required>
+
+            <label>Link Sharelock / Destinasi:</label>
+            <input type="text" id="sharelock" placeholder="Contoh: Jl. Sudirman No.1" oninput="updateMap()">
+
+            <label>Teks Koordinat (Opsional):</label>
+            <input type="text" id="koordinat">
+
+            <label>Foto Rumah:</label>
+            <input type="file" id="foto" accept="image/*">
+
+            <iframe id="mapPreview" src=""></iframe>
+
+            <button onclick="simpanRute()">Simpan Rute (Online)</button>
+            <p id="status" style="font-size: 0.8em; text-align: center; margin-top: 10px;"></p>
+        </div>
+    </div>
+
+    <script>
+        // Daftarkan Service Worker untuk Offline Mode
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+
+        function checkPin() {
+            const pin = document.getElementById('pinInput').value;
+            if (pin === "123456") { // Ganti dengan PIN rahasia Anda
+                document.getElementById('authScreen').style.display = 'none';
+                document.getElementById('appScreen').style.display = 'block';
+            } else {
+                alert("PIN Salah!");
+            }
+        }
+
+        function updateMap() {
+            const dest = document.getElementById('sharelock').value;
+            const iframe = document.getElementById('mapPreview');
+            if (dest.length > 3) {
+                // Generate rute dari Greencentermart ke Tujuan
+                iframe.src = `https://maps.google.com/maps?saddr=Greencentermart&daddr=${encodeURIComponent(dest)}&output=embed`;
+                iframe.style.display = 'block';
+            } else {
+                iframe.style.display = 'none';
+            }
+        }
+
+        async function simpanRute() {
+            if (!navigator.onLine) {
+                alert("Anda sedang offline. Menambah rute butuh koneksi internet.");
+                return;
+            }
+
+            const status = document.getElementById('status');
+            status.innerText = "Mengirim data...";
+
+            const fileInput = document.getElementById('foto');
+            let fotoBase64 = null;
+
+            if (fileInput.files.length > 0) {
+                fotoBase64 = await toBase64(fileInput.files[0]);
+            }
+
+            const payload = {
+                nama: document.getElementById('nama').value,
+                alamat: document.getElementById('alamat').value,
+                sharelock: document.getElementById('sharelock').value,
+                koordinat: document.getElementById('koordinat').value,
+                fotoBase64: fotoBase64
+            };
+
+            try {
+                // Ganti dengan URL WORKER CLOUDFLARE Anda
+                const WORKER_URL = "https://nama-worker.username.workers.dev";
+                
+                const response = await fetch(WORKER_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    status.innerText = "Berhasil! " + result.message;
+                    status.style.color = "#4CAF50";
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (err) {
+                status.innerText = "Error: " + err.message;
+                status.style.color = "#f44336";
+            }
+        }
+
+        const toBase64 = file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+    </script>
+</body>
+</html>
