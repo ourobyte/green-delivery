@@ -1,38 +1,23 @@
-/*
-|--------------------------------------------------------------------------
-| app.js
-| Delivery Greencentermart Frontend
-|--------------------------------------------------------------------------
-|
-| Cloudflare Worker Endpoint
-| Contoh:
-| https://delivery-worker.<subdomain>.workers.dev
-|
-*/
 
-const API_BASE = "https://YOUR_WORKER_URL.workers.dev/api";
+const API_BASE = "https://spread-divine-sensitive-extras.trycloudflare.com/api";
 
 /*
 |--------------------------------------------------------------------------
-| Helper Request
+| REQUEST HELPER
 |--------------------------------------------------------------------------
 */
-
 async function request(url, options = {}) {
 
-    const response = await fetch(url, options);
+    const res = await fetch(url, options);
 
     let data = {};
 
     try {
-        data = await response.json();
+        data = await res.json();
     } catch (_) {}
 
-    if (!response.ok) {
-        throw new Error(
-            data.message ||
-            `HTTP Error ${response.status}`
-        );
+    if (!res.ok) {
+        throw new Error(data.message || `HTTP Error ${res.status}`);
     }
 
     return data;
@@ -40,457 +25,203 @@ async function request(url, options = {}) {
 
 /*
 |--------------------------------------------------------------------------
-| Ambil Semua Data
+| GET ALL
 |--------------------------------------------------------------------------
 */
-
 async function getAllDeliveries() {
-
-    return await request(
-        `${API_BASE}/delivery`
-    );
-
+    return request(`${API_BASE}/delivery`);
 }
 
 /*
 |--------------------------------------------------------------------------
-| Cari Data
+| SEARCH
 |--------------------------------------------------------------------------
 */
-
-async function searchDeliveries(keyword = "") {
-
-    return await request(
-        `${API_BASE}/delivery/search?q=${encodeURIComponent(keyword)}`
-    );
-
+async function searchDeliveries(q = "") {
+    return request(`${API_BASE}/delivery/search?q=${encodeURIComponent(q)}`);
 }
 
 /*
 |--------------------------------------------------------------------------
-| Ambil Detail
+| ADD
 |--------------------------------------------------------------------------
 */
-
-async function getDeliveryById(id) {
-
-    return await request(
-        `${API_BASE}/delivery/${id}`
-    );
-
-}
-
-/*
-|--------------------------------------------------------------------------
-| Tambah Data
-|--------------------------------------------------------------------------
-*/
-
 async function addDelivery(formData) {
-
-    return await request(
-        `${API_BASE}/delivery`,
-        {
-            method: "POST",
-            body: formData
-        }
-    );
-
+    return request(`${API_BASE}/delivery`, {
+        method: "POST",
+        body: formData
+    });
 }
 
 /*
 |--------------------------------------------------------------------------
-| Update Data
+| DELETE
 |--------------------------------------------------------------------------
 */
-
-async function updateDelivery(id, formData) {
-
-    return await request(
-        `${API_BASE}/delivery/${id}`,
-        {
-            method: "PUT",
-            body: formData
-        }
-    );
-
-}
-
-/*
-|--------------------------------------------------------------------------
-| Hapus Data
-|--------------------------------------------------------------------------
-*/
-
 async function deleteDelivery(id) {
 
-    const confirmDelete = confirm(
-        "Yakin ingin menghapus data ini?"
-    );
+    if (!confirm("Hapus data ini?")) return;
 
-    if (!confirmDelete) {
-        return;
-    }
-
-    return await request(
-        `${API_BASE}/delivery/${id}`,
-        {
-            method: "DELETE"
-        }
-    );
-
+    return request(`${API_BASE}/delivery/${id}`, {
+        method: "DELETE"
+    });
 }
 
 /*
 |--------------------------------------------------------------------------
-| Render Daftar
+| RENDER LIST
 |--------------------------------------------------------------------------
 */
-
 function renderDeliveryList(items = []) {
 
-    const resultList =
-        document.getElementById("resultList");
+    const list = document.getElementById("resultList");
+    const status = document.getElementById("status");
+    const template = document.getElementById("deliveryTemplate");
 
-    const status =
-        document.getElementById("status");
-
-    const template =
-        document.getElementById("deliveryTemplate");
-
-    if (!resultList || !template) {
-        return;
-    }
-
-    resultList.innerHTML = "";
+    list.innerHTML = "";
 
     if (!items.length) {
-
-        status.textContent =
-            "Tidak ada data.";
-
+        status.textContent = "Tidak ada data";
         return;
     }
 
-    status.textContent =
-        `${items.length} data ditemukan`;
+    status.textContent = `${items.length} data ditemukan`;
 
     items.forEach(item => {
 
-        const clone =
-            template.content.cloneNode(true);
+        const node = template.content.cloneNode(true);
 
-        clone.querySelector(".nama").textContent =
-            item.nama || "-";
-
-        clone.querySelector(".alamat").textContent =
-            item.alamat || "-";
-
-        clone.querySelector(".keterangan").textContent =
-            item.keterangan || "-";
+        node.querySelector(".nama").textContent = item.nama || "-";
+        node.querySelector(".alamat").textContent = item.alamat || "-";
+        node.querySelector(".keterangan").textContent = item.keterangan || "-";
 
         /*
         |--------------------------------------------------------------------------
-        | Foto Rumah
+        | FOTO
         |--------------------------------------------------------------------------
         */
-
-        const foto =
-            clone.querySelector(".foto");
+        const foto = node.querySelector(".foto");
 
         if (item.foto) {
-
             foto.src = item.foto;
-
         } else {
-
-            foto.alt = "Tidak ada foto";
-
             foto.style.display = "none";
-
         }
 
         /*
         |--------------------------------------------------------------------------
-        | Maps Preview
+        | MAPS (FIX: LAT LNG)
         |--------------------------------------------------------------------------
         */
+        const maps = node.querySelector(".maps");
 
-        const maps =
-            clone.querySelector(".maps");
-
-        if (item.sharelock) {
+        if (item.lat && item.lng) {
 
             maps.src =
-                "https://www.google.com/maps?q="
-                + encodeURIComponent(item.sharelock)
-                + "&output=embed";
+                `https://www.google.com/maps?q=${item.lat},${item.lng}&output=embed`;
 
         } else {
-
             maps.style.display = "none";
-
         }
 
         /*
         |--------------------------------------------------------------------------
-        | Tombol Buka Maps
+        | BUKA MAPS
         |--------------------------------------------------------------------------
         */
+        node.querySelector(".lihat-rute").addEventListener("click", () => {
 
-        clone
-            .querySelector(".lihat-rute")
-            .addEventListener("click", () => {
-
-                if (!item.sharelock) {
-
-                    alert(
-                        "Sharelock tidak tersedia."
-                    );
-
-                    return;
-                }
-
-                window.open(
-                    item.sharelock,
-                    "_blank"
-                );
-
-            });
-
-        /*
-        |--------------------------------------------------------------------------
-        | Tombol Edit
-        |--------------------------------------------------------------------------
-        */
-
-        clone
-            .querySelector(".edit-data")
-            .addEventListener("click", () => {
-
-                location.href =
-                    `update.html?id=${item._id}`;
-
-            });
-
-        /*
-        |--------------------------------------------------------------------------
-        | Tombol Hapus
-        |--------------------------------------------------------------------------
-        */
-
-        const actionContainer =
-            clone.querySelector(".actions");
-
-        const deleteBtn =
-            document.createElement("button");
-
-        deleteBtn.textContent =
-            "Hapus";
-
-        deleteBtn.addEventListener(
-            "click",
-            async () => {
-
-                try {
-
-                    await deleteDelivery(
-                        item._id
-                    );
-
-                    await loadAllData();
-
-                } catch (err) {
-
-                    alert(
-                        err.message ||
-                        "Gagal menghapus data."
-                    );
-
-                }
-
+            if (!item.lat || !item.lng) {
+                alert("Koordinat tidak tersedia");
+                return;
             }
-        );
 
-        actionContainer.appendChild(
-            deleteBtn
-        );
+            window.open(
+                `https://www.google.com/maps?q=${item.lat},${item.lng}`,
+                "_blank"
+            );
+        });
 
-        resultList.appendChild(clone);
+        /*
+        |--------------------------------------------------------------------------
+        | EDIT
+        |--------------------------------------------------------------------------
+        */
+        node.querySelector(".edit-data").addEventListener("click", () => {
+            location.href = `update.html?id=${item._id}`;
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | DELETE
+        |--------------------------------------------------------------------------
+        */
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "Hapus";
+
+        delBtn.addEventListener("click", async () => {
+
+            try {
+                await deleteDelivery(item._id);
+                await loadAllData();
+            } catch (err) {
+                alert(err.message);
+            }
+
+        });
+
+        node.querySelector(".actions").appendChild(delBtn);
+
+        list.appendChild(node);
 
     });
-
 }
 
 /*
 |--------------------------------------------------------------------------
-| Load Semua Data
+| LOAD DATA
 |--------------------------------------------------------------------------
 */
-
 async function loadAllData() {
 
-    const status =
-        document.getElementById("status");
+    const status = document.getElementById("status");
 
     try {
+        status.textContent = "Memuat data...";
 
-        if (status) {
+        const data = await getAllDeliveries();
 
-            status.textContent =
-                "Memuat data...";
-
-        }
-
-        const data =
-            await getAllDeliveries();
-
-        renderDeliveryList(
-            data.data || data
-        );
+        renderDeliveryList(data.data || data);
 
     } catch (err) {
-
         console.error(err);
-
-        if (status) {
-
-            status.textContent =
-                err.message ||
-                "Gagal memuat data.";
-
-        }
-
+        status.textContent = err.message;
     }
-
 }
 
 /*
 |--------------------------------------------------------------------------
-| Search
+| SEARCH
 |--------------------------------------------------------------------------
 */
-
 async function searchData() {
 
-    const input =
-        document.getElementById("searchInput");
+    const input = document.getElementById("searchInput");
+    const q = input.value.trim();
 
-    const keyword =
-        input
-            ? input.value.trim()
-            : "";
+    if (!q) return loadAllData();
 
-    const status =
-        document.getElementById("status");
+    const data = await searchDeliveries(q);
 
-    try {
-
-        if (status) {
-
-            status.textContent =
-                "Mencari...";
-
-        }
-
-        if (!keyword) {
-
-            await loadAllData();
-
-            return;
-        }
-
-        const data =
-            await searchDeliveries(
-                keyword
-            );
-
-        renderDeliveryList(
-            data.data || data
-        );
-
-    } catch (err) {
-
-        console.error(err);
-
-        if (status) {
-
-            status.textContent =
-                err.message ||
-                "Pencarian gagal.";
-
-        }
-
-    }
-
+    renderDeliveryList(data.data || data);
 }
 
 /*
 |--------------------------------------------------------------------------
-| Utility
+| EXPORT GLOBAL
 |--------------------------------------------------------------------------
 */
-
-function formatDate(dateString) {
-
-    if (!dateString) {
-        return "-";
-    }
-
-    return new Date(dateString)
-        .toLocaleString("id-ID");
-
-}
-
-/*
-|--------------------------------------------------------------------------
-| PWA Install
-|--------------------------------------------------------------------------
-*/
-
-let deferredPrompt = null;
-
-window.addEventListener(
-    "beforeinstallprompt",
-    event => {
-
-        event.preventDefault();
-
-        deferredPrompt = event;
-
-        console.log(
-            "PWA dapat diinstall."
-        );
-
-    }
-);
-
-/*
-|--------------------------------------------------------------------------
-| Export ke Global Scope
-|--------------------------------------------------------------------------
-*/
-
-window.loadAllData =
-    loadAllData;
-
-window.searchData =
-    searchData;
-
-window.addDelivery =
-    addDelivery;
-
-window.updateDelivery =
-    updateDelivery;
-
-window.deleteDelivery =
-    deleteDelivery;
-
-window.getDeliveryById =
-    getDeliveryById;
-
-window.getAllDeliveries =
-    getAllDeliveries;
-
-window.searchDeliveries =
-    searchDeliveries;
+window.loadAllData = loadAllData;
+window.searchData = searchData;
+window.addDelivery = addDelivery;
+window.deleteDelivery = deleteDelivery;
